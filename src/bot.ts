@@ -1,5 +1,6 @@
 import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js";
 import { claimCooldown } from "./ai/cooldown";
+import { safelyLogAiResponse } from "./ai/logger";
 import { generateResponse } from "./ai/provider";
 import { commandCollection } from "./commands";
 import { getAiConfig, getBotConfig } from "./config";
@@ -111,15 +112,27 @@ client.on(Events.MessageCreate, async (message) => {
     });
     return;
   }
+  const startedAt = Date.now();
+  let model = "unknown";
+  let response: string;
 
   try {
     await message.channel.sendTyping();
-    const response = await generateResponse(getAiConfig(), question);
-    await message.reply({
-      allowedMentions: { parse: [], repliedUser: false },
-      content: response,
-    });
+    const aiConfig = getAiConfig();
+    model = aiConfig.model;
+    response = await generateResponse(aiConfig, question);
   } catch (error) {
+    await safelyLogAiResponse({
+      error: error instanceof Error ? error.message : String(error),
+      guildId: message.guildId,
+      latencyMs: Date.now() - startedAt,
+      model,
+      question,
+      success: false,
+      timestamp: new Date().toISOString(),
+      trigger: "mention",
+      userId: message.author.id,
+    });
     console.error("AI message response failed", error);
     await message
       .reply({
@@ -129,5 +142,23 @@ client.on(Events.MessageCreate, async (message) => {
       .catch((replyError: unknown) =>
         console.error("Failed to send AI error response", replyError),
       );
+    return;
   }
+
+  await safelyLogAiResponse({
+    guildId: message.guildId,
+    latencyMs: Date.now() - startedAt,
+    model,
+    question,
+    response,
+    success: true,
+    timestamp: new Date().toISOString(),
+    trigger: "mention",
+    userId: message.author.id,
+  });
+
+  await message.reply({
+    allowedMentions: { parse: [], repliedUser: false },
+    content: response,
+  });
 });
