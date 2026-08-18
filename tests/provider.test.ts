@@ -28,10 +28,9 @@ test("sends a chat completion request to the compatible endpoint", async () => {
   };
 
   const response = await generateResponse(config, "Question", fakeFetch);
-  const body = JSON.parse(requestBody) as { model: string };
 
   expect(requestUrl).toBe("https://example.test/v1/chat/completions");
-  expect(body.model).toBe("test-model");
+  expect(JSON.parse(requestBody)).toMatchObject({ model: "test-model" });
   expect(response).toBe("Answer");
 });
 
