@@ -87,8 +87,8 @@ bun test
 
 Oxlint and Oxfmt are enforced by GitHub Actions on pull requests and pushes to
 `main`. The production workflow is manually triggered with a selected commit
-or ref and validates the checks plus the Docker image build. It does not deploy
-to a host.
+from `main` and validates the checks plus the Docker image build. It does not
+deploy to a host.
 
 ## Docker
 
