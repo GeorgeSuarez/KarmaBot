@@ -36,6 +36,7 @@ DISCORD_TOKEN=
 DISCORD_CLIENT_ID=
 DISCORD_STAGING_GUILD_ID=
 DISCORD_PRODUCTION_GUILD_ID=
+DISCORD_MENTION_ALLOWLIST=123456789012345678,234567890123456789
 AI_API_KEY=
 AI_BASE_URL=https://api.openai.com/v1
 AI_MODEL=
@@ -87,6 +88,16 @@ cannot create Discord mentions.
 
 The AI API key is read from `AI_API_KEY` and must be configured as a host
 environment variable. The bot does not persist questions or responses.
+
+## Mention Whitelist
+
+Mention-triggered AI questions are deny-by-default. Set `DISCORD_MENTION_ALLOWLIST`
+to a comma-separated list of Discord user IDs. Users not in the list are
+ignored without a response. An empty value disables mention-triggered questions
+for everyone. The `/ask` slash command is not affected by this whitelist.
+
+Use `/get_id` to find a Discord user ID, then restart the bot after changing the
+allowlist. Do not use usernames or display names because they can change.
 
 ## Quality Checks
 
