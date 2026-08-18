@@ -10,8 +10,28 @@ function requiredEnvironmentVariable(name: string): string {
   return value;
 }
 
-export function getBotConfig(): { token: string } {
-  return { token: requiredEnvironmentVariable("DISCORD_TOKEN") };
+export function parseMentionAllowlist(
+  value = Bun.env.DISCORD_MENTION_ALLOWLIST,
+): ReadonlySet<string> {
+  const ids =
+    value
+      ?.split(",")
+      .map((id) => id.trim())
+      .filter(Boolean) ?? [];
+  const invalidId = ids.find((id) => !/^[0-9]{17,20}$/.test(id));
+
+  if (invalidId) {
+    throw new Error(`Invalid Discord user ID in mention allowlist: ${invalidId}`);
+  }
+
+  return new Set(ids);
+}
+
+export function getBotConfig(): { token: string; mentionAllowlist: ReadonlySet<string> } {
+  return {
+    mentionAllowlist: parseMentionAllowlist(),
+    token: requiredEnvironmentVariable("DISCORD_TOKEN"),
+  };
 }
 
 export function getDeploymentConfig(target: DeploymentTarget): {

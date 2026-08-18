@@ -71,7 +71,7 @@ function shutdown(signal: string): void {
 process.once("SIGINT", () => shutdown("SIGINT"));
 process.once("SIGTERM", () => shutdown("SIGTERM"));
 
-const { token } = getBotConfig();
+const { mentionAllowlist, token } = getBotConfig();
 
 client.login(token).catch((error: unknown) => {
   console.error("Failed to log in to Discord", error);
@@ -80,6 +80,7 @@ client.login(token).catch((error: unknown) => {
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot || !message.guildId) return;
+  if (!mentionAllowlist.has(message.author.id)) return;
 
   const botUser = client.user;
   if (!botUser || !message.mentions.has(botUser)) return;
