@@ -1,5 +1,16 @@
 export type DeploymentTarget = "staging" | "production";
 
+export interface BotConfig {
+  token: string;
+  mentionAllowlist: ReadonlySet<string>;
+}
+
+export interface DeploymentConfig {
+  clientId: string;
+  guildId: string;
+  token: string;
+}
+
 function requiredEnvironmentVariable(name: string): string {
   const value = Bun.env[name]?.trim();
 
@@ -27,18 +38,14 @@ export function parseMentionAllowlist(
   return new Set(ids);
 }
 
-export function getBotConfig(): { token: string; mentionAllowlist: ReadonlySet<string> } {
+export function getBotConfig(): BotConfig {
   return {
     mentionAllowlist: parseMentionAllowlist(),
     token: requiredEnvironmentVariable("DISCORD_TOKEN"),
   };
 }
 
-export function getDeploymentConfig(target: DeploymentTarget): {
-  clientId: string;
-  guildId: string;
-  token: string;
-} {
+export function getDeploymentConfig(target: DeploymentTarget): DeploymentConfig {
   const guildVariable =
     target === "staging" ? "DISCORD_STAGING_GUILD_ID" : "DISCORD_PRODUCTION_GUILD_ID";
 

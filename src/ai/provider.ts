@@ -3,18 +3,29 @@ import type { AiConfig } from "../config";
 export const MAX_RESPONSE_CHARS = 1000;
 const REQUEST_TIMEOUT_MS = 15_000;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+type JsonPrimitive = boolean | null | number | string;
+type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+
+interface JsonObject {
+  readonly [key: string]: JsonValue | undefined;
 }
 
-function extractText(value: unknown): string {
-  if (typeof value === "string") return value.trim();
+function isJsonObject(value: JsonValue | undefined): value is JsonObject {
+  return value !== undefined && value !== null && !Array.isArray(value) && Object(value) === value;
+}
+
+function isJsonString(value: JsonValue | undefined): value is string {
+  return Object.prototype.toString.call(value) === "[object String]";
+}
+
+function extractText(value: JsonValue | undefined): string {
+  if (isJsonString(value)) return value.trim();
 
   if (Array.isArray(value)) {
     const text = value
       .map((part) => {
-        if (typeof part === "string") return part;
-        return isRecord(part) && typeof part.text === "string" ? part.text : "";
+        if (isJsonString(part)) return part;
+        return isJsonObject(part) && isJsonString(part.text) ? part.text : "";
       })
       .join("")
       .trim();
@@ -25,13 +36,13 @@ function extractText(value: unknown): string {
   throw new Error("AI provider returned no text content");
 }
 
-function extractContent(payload: unknown): string {
-  if (!isRecord(payload) || !Array.isArray(payload.choices)) {
+function extractContent(payload: JsonValue): string {
+  if (!isJsonObject(payload) || !Array.isArray(payload.choices)) {
     throw new Error("AI provider returned an invalid response");
   }
 
   const firstChoice = payload.choices[0];
-  if (!isRecord(firstChoice)) {
+  if (!isJsonObject(firstChoice)) {
     throw new Error("AI provider returned an invalid choice");
   }
 
@@ -39,12 +50,16 @@ function extractContent(payload: unknown): string {
     return extractText(firstChoice.text);
   }
 
-  if (!isRecord(firstChoice.message)) {
+  if (!isJsonObject(firstChoice.message)) {
     const keys = Object.keys(firstChoice).join(", ") || "none";
     throw new Error(`AI provider returned no message (choice keys: ${keys})`);
   }
 
   return extractText(firstChoice.message.content);
+}
+
+function parseJson(text: string): JsonValue {
+  return JSON.parse(text);
 }
 
 export function limitResponse(text: string): string {
@@ -79,5 +94,5 @@ export async function generateResponse(
     throw new Error(`AI provider returned HTTP ${response.status}`);
   }
 
-  return limitResponse(extractContent(await response.json()));
+  return limitResponse(extractContent(parseJson(await response.text())));
 }

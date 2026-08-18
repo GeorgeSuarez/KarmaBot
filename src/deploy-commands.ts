@@ -19,9 +19,13 @@ async function deployCommands(target: DeploymentTarget): Promise<void> {
 
   console.log(`Refreshing ${body.length} commands in ${target} guild.`);
 
-  const deployedCommands = (await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+  const deployedCommands = await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
     body,
-  })) as unknown[];
+  });
+
+  if (!Array.isArray(deployedCommands)) {
+    throw new Error("Discord returned an invalid deployed command list");
+  }
 
   console.log(`Successfully deployed ${deployedCommands.length} commands to ${target} guild.`);
 }
@@ -30,7 +34,7 @@ async function main(): Promise<void> {
   await deployCommands(getTarget());
 }
 
-main().catch((error: unknown) => {
+main().catch((error) => {
   console.error("Failed to deploy commands", error);
   process.exitCode = 1;
 });

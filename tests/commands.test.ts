@@ -1,22 +1,44 @@
 import { expect, test } from "bun:test";
-import type { ChatInputCommandInteraction, User } from "discord.js";
 import { commands } from "../src/commands";
+import type { CommandInteraction, CommandReply } from "../src/types/command";
+
+interface TestInteraction {
+  interaction: CommandInteraction;
+  replies: CommandReply[];
+}
+
+function createInteraction(): TestInteraction {
+  const replies: CommandReply[] = [];
+  const interaction: CommandInteraction = {
+    deferReply: async () => {},
+    editReply: async () => {},
+    guildId: "test-guild",
+    member: null,
+    options: {
+      getString: (_name: string, _required?: boolean) => "",
+      getUser: () => null,
+    },
+    reply: async (response) => {
+      replies.push(response);
+    },
+    user: {
+      createdAt: new Date("2024-01-02T03:04:05.000Z"),
+      globalName: "Ada Lovelace",
+      id: "123",
+      username: "ada",
+    },
+  };
+
+  return { interaction, replies };
+}
 
 test("registers the supported utility commands", () => {
   expect(commands.map((command) => command.data.name)).toEqual(["ping", "user", "get_id", "ask"]);
 });
 
 test("get_id defaults to the invoking user", async () => {
-  const replies: unknown[] = [];
-  const invokingUser = {
-    id: "123",
-    username: "Ada",
-  } as User;
-  const interaction = {
-    options: { getUser: () => null },
-    reply: async (response: unknown) => replies.push(response),
-    user: invokingUser,
-  } as unknown as ChatInputCommandInteraction;
+  const { interaction, replies } = createInteraction();
+  interaction.user = { ...interaction.user, username: "Ada" };
   const getIdCommand = commands.find((command) => command.data.name === "get_id");
 
   await getIdCommand?.execute(interaction);
@@ -25,10 +47,7 @@ test("get_id defaults to the invoking user", async () => {
 });
 
 test("ping replies with pong", async () => {
-  const replies: unknown[] = [];
-  const interaction = {
-    reply: async (response: unknown) => replies.push(response),
-  } as unknown as ChatInputCommandInteraction;
+  const { interaction, replies } = createInteraction();
   const pingCommand = commands.find((command) => command.data.name === "ping");
 
   await pingCommand?.execute(interaction);
@@ -37,20 +56,17 @@ test("ping replies with pong", async () => {
 });
 
 test("user returns the administrative profile", async () => {
-  const replies: unknown[] = [];
-  const interaction = {
-    member: {
-      displayName: "Ada Lovelace",
-      joinedAt: new Date("2025-01-02T03:04:05.000Z"),
-    },
-    reply: async (response: unknown) => replies.push(response),
-    user: {
-      createdAt: new Date("2024-01-02T03:04:05.000Z"),
-      globalName: "Ada Lovelace",
-      id: "123",
-      username: "ada",
-    },
-  } as unknown as ChatInputCommandInteraction;
+  const { interaction, replies } = createInteraction();
+  interaction.member = {
+    displayName: "Ada Lovelace",
+    joinedAt: new Date("2025-01-02T03:04:05.000Z"),
+  };
+  interaction.user = {
+    createdAt: new Date("2024-01-02T03:04:05.000Z"),
+    globalName: "Ada Lovelace",
+    id: "123",
+    username: "ada",
+  };
   const userCommand = commands.find((command) => command.data.name === "user");
 
   await userCommand?.execute(interaction);

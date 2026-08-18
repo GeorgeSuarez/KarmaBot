@@ -74,7 +74,7 @@ process.once("SIGTERM", () => shutdown("SIGTERM"));
 
 const { mentionAllowlist, token } = getBotConfig();
 
-client.login(token).catch((error: unknown) => {
+client.login(token).catch((error) => {
   console.error("Failed to log in to Discord", error);
   process.exitCode = 1;
 });
@@ -139,9 +139,7 @@ client.on(Events.MessageCreate, async (message) => {
         content: "I could not answer that right now. Please try again later.",
         allowedMentions: { parse: [], repliedUser: false },
       })
-      .catch((replyError: unknown) =>
-        console.error("Failed to send AI error response", replyError),
-      );
+      .catch((replyError) => console.error("Failed to send AI error response", replyError));
     return;
   }
 
