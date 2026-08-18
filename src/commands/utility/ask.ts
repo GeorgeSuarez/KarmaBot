@@ -1,6 +1,7 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import { claimCooldown } from "../../ai/cooldown";
 import { generateResponse } from "../../ai/provider";
+import { safelyLogAiResponse } from "../../ai/logger";
 import { getAiConfig } from "../../config";
 import type { BotCommand } from "../../types/command";
 
@@ -25,9 +26,41 @@ const ask: BotCommand = {
       return;
     }
     const question = interaction.options.getString("question", true).trim();
-
     await interaction.deferReply();
-    const response = await generateResponse(getAiConfig(), question);
+    const startedAt = Date.now();
+    let model = "unknown";
+    let response: string;
+
+    try {
+      const aiConfig = getAiConfig();
+      model = aiConfig.model;
+      response = await generateResponse(aiConfig, question);
+    } catch (error) {
+      await safelyLogAiResponse({
+        error: error instanceof Error ? error.message : String(error),
+        guildId: interaction.guildId ?? "unknown",
+        latencyMs: Date.now() - startedAt,
+        model,
+        question,
+        success: false,
+        timestamp: new Date().toISOString(),
+        trigger: "slash",
+        userId: interaction.user.id,
+      });
+      throw error;
+    }
+
+    await safelyLogAiResponse({
+      guildId: interaction.guildId ?? "unknown",
+      latencyMs: Date.now() - startedAt,
+      model,
+      question,
+      response,
+      success: true,
+      timestamp: new Date().toISOString(),
+      trigger: "slash",
+      userId: interaction.user.id,
+    });
 
     await interaction.editReply({
       allowedMentions: { parse: [] },

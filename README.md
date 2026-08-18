@@ -37,6 +37,7 @@ DISCORD_CLIENT_ID=
 DISCORD_STAGING_GUILD_ID=
 DISCORD_PRODUCTION_GUILD_ID=
 DISCORD_MENTION_ALLOWLIST=123456789012345678,234567890123456789
+AI_RESPONSE_LOG_PATH=logs/ai-responses.jsonl
 AI_API_KEY=
 AI_BASE_URL=https://api.openai.com/v1
 AI_MODEL=
@@ -87,7 +88,8 @@ the bot. Responses are capped at 1,000 characters, questions are capped at
 cannot create Discord mentions.
 
 The AI API key is read from `AI_API_KEY` and must be configured as a host
-environment variable. The bot does not persist questions or responses.
+environment variable. AI questions and responses are persisted in the configured
+JSONL log file.
 
 ## Mention Whitelist
 
@@ -98,6 +100,19 @@ for everyone. The `/ask` slash command is not affected by this whitelist.
 
 Use `/get_id` to find a Discord user ID, then restart the bot after changing the
 allowlist. Do not use usernames or display names because they can change.
+
+## AI Response Logs
+
+Every AI request is recorded as one JSON object per line. Successful entries
+include the timestamp, trigger, user ID, guild ID, model, question, response,
+and latency. Failed requests include the question and error instead of a
+response.
+
+Logs default to `logs/ai-responses.jsonl`; override the location with
+`AI_RESPONSE_LOG_PATH`. The `logs/` directory is ignored by git. Because logs
+contain user questions and generated responses, protect the file and apply a
+retention policy appropriate for your server. Logging failures are reported to
+stderr and do not prevent the bot from replying.
 
 ## Quality Checks
 
