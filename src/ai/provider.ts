@@ -7,22 +7,44 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function extractText(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+
+  if (Array.isArray(value)) {
+    const text = value
+      .map((part) => {
+        if (typeof part === "string") return part;
+        return isRecord(part) && typeof part.text === "string" ? part.text : "";
+      })
+      .join("")
+      .trim();
+
+    if (text) return text;
+  }
+
+  throw new Error("AI provider returned no text content");
+}
+
 function extractContent(payload: unknown): string {
   if (!isRecord(payload) || !Array.isArray(payload.choices)) {
     throw new Error("AI provider returned an invalid response");
   }
 
   const firstChoice = payload.choices[0];
-  if (!isRecord(firstChoice) || !isRecord(firstChoice.message)) {
-    throw new Error("AI provider returned no message");
+  if (!isRecord(firstChoice)) {
+    throw new Error("AI provider returned an invalid choice");
   }
 
-  const content = firstChoice.message.content;
-  if (typeof content !== "string" || !content.trim()) {
-    throw new Error("AI provider returned an empty response");
+  if ("text" in firstChoice) {
+    return extractText(firstChoice.text);
   }
 
-  return content.trim();
+  if (!isRecord(firstChoice.message)) {
+    const keys = Object.keys(firstChoice).join(", ") || "none";
+    throw new Error(`AI provider returned no message (choice keys: ${keys})`);
+  }
+
+  return extractText(firstChoice.message.content);
 }
 
 export function limitResponse(text: string): string {
