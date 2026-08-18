@@ -28,3 +28,21 @@ export function getDeploymentConfig(target: DeploymentTarget): {
     token: requiredEnvironmentVariable("DISCORD_TOKEN"),
   };
 }
+
+export interface AiConfig {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  systemPrompt: string;
+}
+
+export function getAiConfig(): AiConfig {
+  return {
+    apiKey: requiredEnvironmentVariable("AI_API_KEY"),
+    baseUrl: Bun.env.AI_BASE_URL?.trim() || "https://api.openai.com/v1",
+    model: requiredEnvironmentVariable("AI_MODEL"),
+    systemPrompt:
+      Bun.env.AI_SYSTEM_PROMPT?.trim() ||
+      "You are KarmaBot, a helpful and concise Discord community assistant.",
+  };
+}

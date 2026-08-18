@@ -3,7 +3,7 @@ import type { ChatInputCommandInteraction, User } from "discord.js";
 import { commands } from "../src/commands";
 
 test("registers the supported utility commands", () => {
-  expect(commands.map((command) => command.data.name)).toEqual(["ping", "user", "get_id"]);
+  expect(commands.map((command) => command.data.name)).toEqual(["ping", "user", "get_id", "ask"]);
 });
 
 test("get_id defaults to the invoking user", async () => {

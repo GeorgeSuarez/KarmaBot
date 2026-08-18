@@ -1,8 +1,16 @@
 import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js";
+import { claimCooldown } from "./ai/cooldown";
+import { generateResponse } from "./ai/provider";
 import { commandCollection } from "./commands";
-import { getBotConfig } from "./config";
+import { getAiConfig, getBotConfig } from "./config";
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
 
 client.once(Events.ClientReady, (readyClient) => {
   console.log(
@@ -42,8 +50,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         content: "There was an error while executing this command.",
         flags: MessageFlags.Ephemeral as const,
       };
-
-      if (interaction.replied || interaction.deferred) {
+      if (interaction.deferred) {
+        await interaction.editReply(response.content);
+      } else if (interaction.replied) {
         await interaction.followUp(response);
       } else {
         await interaction.reply(response);
@@ -67,4 +76,57 @@ const { token } = getBotConfig();
 client.login(token).catch((error: unknown) => {
   console.error("Failed to log in to Discord", error);
   process.exitCode = 1;
+});
+
+client.on(Events.MessageCreate, async (message) => {
+  if (message.author.bot || !message.guildId) return;
+
+  const botUser = client.user;
+  if (!botUser || !message.mentions.has(botUser)) return;
+
+  const question = message.content.replace(new RegExp(`<@!?${botUser.id}>`, "g"), "").trim();
+
+  if (!question) {
+    await message.reply({
+      content: "Mention me with a question and I will try to answer it.",
+      allowedMentions: { parse: [], repliedUser: false },
+    });
+    return;
+  }
+
+  if (question.length > 2000) {
+    await message.reply({
+      content: "Please keep questions under 2,000 characters.",
+      allowedMentions: { parse: [], repliedUser: false },
+    });
+    return;
+  }
+
+  const waitMs = claimCooldown(message.author.id);
+  if (waitMs > 0) {
+    await message.reply({
+      content: `Please wait ${Math.ceil(waitMs / 1000)} seconds before asking again.`,
+      allowedMentions: { parse: [], repliedUser: false },
+    });
+    return;
+  }
+
+  try {
+    await message.channel.sendTyping();
+    const response = await generateResponse(getAiConfig(), question);
+    await message.reply({
+      allowedMentions: { parse: [], repliedUser: false },
+      content: response,
+    });
+  } catch (error) {
+    console.error("AI message response failed", error);
+    await message
+      .reply({
+        content: "I could not answer that right now. Please try again later.",
+        allowedMentions: { parse: [], repliedUser: false },
+      })
+      .catch((replyError: unknown) =>
+        console.error("Failed to send AI error response", replyError),
+      );
+  }
 });
