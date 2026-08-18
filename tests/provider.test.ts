@@ -34,3 +34,32 @@ test("sends a chat completion request to the compatible endpoint", async () => {
   expect(body.model).toBe("test-model");
   expect(response).toBe("Answer");
 });
+
+test("extracts text from structured message content", async () => {
+  const response = await generateResponse(
+    config,
+    "Question",
+    async () =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: [{ text: "Structured answer" }] } }],
+        }),
+        { status: 200 },
+      ),
+  );
+
+  expect(response).toBe("Structured answer");
+});
+
+test("extracts text from legacy completion responses", async () => {
+  const response = await generateResponse(
+    config,
+    "Question",
+    async () =>
+      new Response(JSON.stringify({ choices: [{ text: "Legacy answer" }] }), {
+        status: 200,
+      }),
+  );
+
+  expect(response).toBe("Legacy answer");
+});
