@@ -50,8 +50,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         content: "There was an error while executing this command.",
         flags: MessageFlags.Ephemeral as const,
       };
-
-      if (interaction.replied || interaction.deferred) {
+      if (interaction.deferred) {
+        await interaction.editReply(response.content);
+      } else if (interaction.replied) {
         await interaction.followUp(response);
       } else {
         await interaction.reply(response);
