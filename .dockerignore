@@ -1,0 +1,7 @@
+.env*
+.git
+.github
+coverage
+node_modules
+tests
+*.md

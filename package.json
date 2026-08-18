@@ -1,15 +1,30 @@
 {
   "name": "karmabot",
-  "module": "index.ts",
-  "type": "module",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+  "type": "module",
+  "module": "src/bot.ts",
+  "scripts": {
+    "start": "bun src/bot.ts",
+    "deploy:staging": "bun src/deploy-commands.ts staging",
+    "deploy:production": "bun src/deploy-commands.ts production",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src tests --tsconfig tsconfig.json",
+    "format": "oxfmt --write src tests *.json",
+    "format:check": "oxfmt --check src tests *.json",
+    "test": "bun test",
+    "check": "bun run typecheck && bun run lint && bun run format:check && bun test"
   },
   "dependencies": {
-    "discord.js": "^14.25.1"
-  }
+    "discord.js": "^14.27.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "bun": "1.3.8"
+  },
+  "packageManager": "bun@1.3.8"
 }
