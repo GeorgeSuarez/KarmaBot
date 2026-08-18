@@ -108,8 +108,9 @@ include the timestamp, trigger, user ID, guild ID, model, question, response,
 and latency. Failed requests include the question and error instead of a
 response.
 
-Logs default to `logs/ai-responses.jsonl`; override the location with
-`AI_RESPONSE_LOG_PATH`. The `logs/` directory is ignored by git. Because logs
+Logs default to `<project>/logs/ai-responses.jsonl`. Set `AI_RESPONSE_LOG_PATH`
+to a relative path such as `logs/archive.jsonl` to use another location inside the
+project. Absolute paths such as `/var/log/...` are ignored. The `logs/` directory is ignored by git. Because logs
 contain user questions and generated responses, protect the file and apply a
 retention policy appropriate for your server. Logging failures are reported to
 stderr and do not prevent the bot from replying.

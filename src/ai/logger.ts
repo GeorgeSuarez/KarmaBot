@@ -1,5 +1,7 @@
 import { appendFile, mkdir } from "node:fs/promises";
 import path from "node:path";
+const PROJECT_ROOT = path.resolve(import.meta.dir, "../..");
+const DEFAULT_LOG_PATH = path.join(PROJECT_ROOT, "logs", "ai-responses.jsonl");
 
 export type AiResponseTrigger = "mention" | "slash";
 
@@ -16,8 +18,12 @@ export interface AiResponseLogEntry {
   userId: string;
 }
 
-export function getAiResponseLogPath(): string {
-  return Bun.env.AI_RESPONSE_LOG_PATH?.trim() || "logs/ai-responses.jsonl";
+export function getAiResponseLogPath(configuredPath = Bun.env.AI_RESPONSE_LOG_PATH): string {
+  const requestedPath = configuredPath?.trim();
+  if (!requestedPath || path.isAbsolute(requestedPath)) return DEFAULT_LOG_PATH;
+
+  const resolvedPath = path.resolve(PROJECT_ROOT, requestedPath);
+  return resolvedPath.startsWith(`${PROJECT_ROOT}${path.sep}`) ? resolvedPath : DEFAULT_LOG_PATH;
 }
 
 export function formatAiResponseLog(entry: AiResponseLogEntry): string {
