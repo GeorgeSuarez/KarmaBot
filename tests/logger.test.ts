@@ -1,5 +1,11 @@
 import { expect, test } from "bun:test";
-import { formatAiResponseLog, logAiResponse, type AiResponseLogEntry } from "../src/ai/logger";
+import path from "node:path";
+import {
+  formatAiResponseLog,
+  getAiResponseLogPath,
+  logAiResponse,
+  type AiResponseLogEntry,
+} from "../src/ai/logger";
 
 const entry: AiResponseLogEntry = {
   guildId: "guild-1",
@@ -33,4 +39,16 @@ test("appends multiple AI responses to the JSONL log", async () => {
   } finally {
     await Bun.$`rm -f ${logPath}`;
   }
+});
+
+test("keeps configured log paths inside the project directory", () => {
+  const projectRoot = path.resolve(import.meta.dir, "..");
+
+  expect(getAiResponseLogPath()).toBe(path.join(projectRoot, "logs", "ai-responses.jsonl"));
+  expect(getAiResponseLogPath("custom/answers.jsonl")).toBe(
+    path.join(projectRoot, "custom", "answers.jsonl"),
+  );
+  expect(getAiResponseLogPath("/var/log/karmabot.jsonl")).toBe(
+    path.join(projectRoot, "logs", "ai-responses.jsonl"),
+  );
 });
