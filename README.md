@@ -9,10 +9,13 @@ The current release provides these guild-only slash commands:
 - `/user` displays username, display name, Discord ID, account creation date,
   and server join date.
 - `/get_id` displays the invoking user's ID or an optional member's ID.
+- `/ask <question>` returns an AI-generated response with a 1,000-character limit.
+- Mentioning the bot followed by a question also requests an AI response.
 
 Successful responses are public. Validation and execution errors are private.
-The bot uses only the `Guilds` gateway intent and should be installed with the
-minimum permissions needed to respond to slash commands.
+The bot uses guild message and message-content intents for mention-triggered
+questions. Enable the Message Content privileged intent in the Discord Developer
+Portal.
 
 ## Requirements
 
@@ -33,6 +36,10 @@ DISCORD_TOKEN=
 DISCORD_CLIENT_ID=
 DISCORD_STAGING_GUILD_ID=
 DISCORD_PRODUCTION_GUILD_ID=
+AI_API_KEY=
+AI_BASE_URL=https://api.openai.com/v1
+AI_MODEL=
+AI_SYSTEM_PROMPT=You are KarmaBot, a helpful and concise Discord community assistant.
 ```
 
 Never commit `.env.local` or any Discord token. If a token has been exposed,
@@ -66,6 +73,20 @@ bun run deploy:production
 
 Both deployment commands fully replace the command set in their target guild.
 They do not register global commands.
+
+## AI Questions
+
+KarmaBot sends questions to an OpenAI-compatible chat-completions endpoint.
+The default endpoint is `https://api.openai.com/v1`; set `AI_BASE_URL` when
+using another compatible provider or proxy.
+
+The bot accepts questions through `/ask question` or a message that mentions
+the bot. Responses are capped at 1,000 characters, questions are capped at
+2,000 characters, and requests time out after 15 seconds. Generated responses
+cannot create Discord mentions.
+
+The AI API key is read from `AI_API_KEY` and must be configured as a host
+environment variable. The bot does not persist questions or responses.
 
 ## Quality Checks
 
@@ -121,7 +142,7 @@ The bot runtime and command deployment are separate processes by design.
 3. Build and run the image locally or through the manual production-build
    workflow using the selected `main` commit.
 4. Deploy the selected change to the staging guild.
-5. Smoke-test `/ping`, `/user`, and `/get_id` in staging.
+5. Smoke-test `/ping`, `/user`, `/get_id`, `/ask`, and mention responses in staging.
 6. Run the host-side production deployment command.
 7. Start the long-running bot process with host-managed environment variables.
 
